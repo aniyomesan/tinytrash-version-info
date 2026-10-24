@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "app_id": "com.ursastack.tinytrash",
+  "revision": 1,
+  "issued_at": "2026-10-24T03:09:32Z",
+  "expires_at": "2026-10-31T03:09:32Z",
+  "platforms": {
+    "ios": {
+      "enabled": false,
+      "minimum_version": "1.0.0",
+      "minimum_build": "1"
+    },
+    "android": {
+      "enabled": false,
+      "minimum_version": "1.0.0",
+      "minimum_build": "1"
+    }
+  }
+}

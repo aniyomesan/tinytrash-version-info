@@ -1,0 +1,56 @@
+name: Validate and publish update policy
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: update-policy-pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate policy and revision history
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python3 validate.py version.json
+          if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA:version.json" 2>/dev/null; then
+            git show "$BASE_SHA:version.json" > "$RUNNER_TEMP/previous-policy.json"
+            python3 validate.py version.json --previous "$RUNNER_TEMP/previous-policy.json"
+          fi
+      - name: Prepare public files
+        run: |
+          mkdir -p public/schema
+          cp version.json public/version.json
+          cp schema/version.schema.json public/schema/version.schema.json
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: public
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Deploy validated policy
+        id: deployment
+        uses: actions/deploy-pages@v4
